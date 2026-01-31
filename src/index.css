@@ -476,3 +476,264 @@ button:hover {
     margin: 1cm;
   }
 }
+
+/* App.css */
+
+/* Global styles */
+body {
+  margin: 0;
+  font-family: 'Inter', sans-serif;
+  background-color: #f4f6f8;
+  color: #333;
+}
+
+.dashboard-wrapper {
+  display: flex;
+  min-height: 100vh;
+}
+
+/* Sidebar */
+.sidebar {
+  width: 220px;
+  background-color: #1f2937;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  padding: 2rem 1rem;
+}
+
+.sidebar-title {
+  font-size: 1.8rem;
+  font-weight: 600;
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.sidebar-btn {
+  background-color: transparent;
+  border: none;
+  color: #d1d5db;
+  padding: 0.75rem 1rem;
+  margin-bottom: 0.5rem;
+  text-align: left;
+  font-size: 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+.sidebar-btn:hover,
+.sidebar-btn.active {
+  background-color: #374151;
+  color: #fff;
+}
+
+.sidebar-btn.logout {
+  margin-top: auto;
+  background-color: #ef4444;
+  color: #fff;
+}
+
+.sidebar-btn.logout:hover {
+  background-color: #dc2626;
+}
+
+/* Main content */
+.dashboard-main {
+  flex: 1;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.loading-text {
+  font-size: 1.2rem;
+  font-weight: 500;
+}
+
+/* Sections */
+.section {
+  width: 100%;
+  max-width: 1000px;
+  margin-bottom: 2rem;
+}
+
+.section-title {
+  font-size: 1.6rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+/* Resume grid */
+.resumes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+  justify-items: center;
+}
+
+/* Resume card */
+.resume-card {
+  background-color: #fff;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  width: 100%;
+  text-align: center;
+  transition: transform 0.2s ease-in-out;
+}
+
+.resume-card:hover {
+  transform: translateY(-5px);
+}
+
+.profile-pic {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-bottom: 1rem;
+}
+
+.resume-card h2 {
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.resume-card p {
+  margin: 0.25rem 0;
+  font-size: 0.95rem;
+  color: #4b5563;
+}
+
+/* Resume actions */
+.resume-actions {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.resume-actions button {
+  padding: 0.5rem 0.8rem;
+  font-size: 0.85rem;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+.edit-btn {
+  background-color: #3b82f6;
+  color: #fff;
+}
+
+.edit-btn:hover {
+  background-color: #2563eb;
+}
+
+.delete-btn {
+  background-color: #ef4444;
+  color: #fff;
+}
+
+.delete-btn:hover {
+  background-color: #dc2626;
+}
+
+.view-btn {
+  background-color: #10b981;
+  color: #fff;
+}
+
+.view-btn:hover {
+  background-color: #059669;
+}
+
+/* Dashboard Form */
+form {
+  width: 100%;
+  max-width: 700px;
+  background-color: #fff;
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+form h2 {
+  text-align: center;
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+form input,
+form textarea {
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  font-size: 1rem;
+  width: 100%;
+}
+
+form input:focus,
+form textarea:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+}
+
+form button {
+  background-color: #10b981;
+  color: #fff;
+  padding: 0.6rem 1rem;
+  font-size: 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  border: none;
+  transition: background-color 0.2s ease-in-out;
+}
+
+form button:hover {
+  background-color: #059669;
+}
+
+/* Array item buttons */
+form .bg-blue-500 {
+  background-color: #3b82f6 !important;
+}
+
+form .bg-red-500 {
+  background-color: #ef4444 !important;
+}
+
+form .flex {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .dashboard-wrapper {
+    flex-direction: column;
+  }
+  .sidebar {
+    width: 100%;
+    flex-direction: row;
+    overflow-x: auto;
+  }
+  .sidebar-btn {
+    flex: 1;
+    text-align: center;
+  }
+  .dashboard-main {
+    padding: 1rem;
+  }
+}
