@@ -1,15 +1,15 @@
+// Dashboard.jsx
 import { useEffect, useState } from "react";
 import supabase from "../config";
-import Swal from "sweetalert2";
-import jsPDF from "jspdf";
+import { useNavigate } from "react-router-dom";
 import DashboardForm from "./DashboardForm";
-import { motion, AnimatePresence } from "framer-motion";
+import "../App.css";
 
 const Dashboard = () => {
   const [resumes, setResumes] = useState([]);
+  const [selectedResume, setSelectedResume] = useState(null); // Your resume
   const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
-  const [editingId, setEditingId] = useState(null);
+  const [view, setView] = useState("my"); // "my", "all", "create"
   const [formData, setFormData] = useState({
     title: "",
     personal_info: { name: "", email: "", phone: "", profilePic: "" },
@@ -22,25 +22,28 @@ const Dashboard = () => {
     profile_summary: "",
   });
   const [file, setFile] = useState(null);
-  const [user, setUser] = useState(null);
 
-  // Fetch user session & resumes
+  const navigate = useNavigate();
+
+  // Fetch all resumes
   const fetchResumes = async () => {
-    const { data } = await supabase.auth.getUser();
-    if (!data.user) return;
-
-    setUser(data.user);
     setLoading(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      navigate("/");
+      return;
+    }
 
-    const { data: resumesData, error } = await supabase
+    const { data, error } = await supabase
       .from("resumes")
       .select("*")
-      .eq("user_id", data.user.id)
+      .eq("user_id", user.id)
       .order("created_at", { ascending: false });
 
-    if (error) Swal.fire("Error", error.message, "error");
-    else setResumes(resumesData);
-
+    if (!error) {
+      setResumes(data);
+      setSelectedResume(data[0] || null); // default to first resume
+    }
     setLoading(false);
   };
 
@@ -48,59 +51,17 @@ const Dashboard = () => {
     fetchResumes();
   }, []);
 
-  // ---------------- CREATE / UPDATE ----------------
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!user) return Swal.fire("Error", "User not found!", "error");
-
-    let profilePicUrl = formData.personal_info.profilePic;
-
-    // Upload profile pic if selected
-    if (file) {
-      const fileName = `${user.id}_${Date.now()}_${file.name}`;
-      const { error: uploadError } = await supabase.storage
-        .from("profile-pics")
-        .upload(fileName, file);
-
-      if (uploadError) return Swal.fire("Error", uploadError.message, "error");
-
-      const { publicURL } = supabase.storage
-        .from("profile-pics")
-        .getPublicUrl(fileName);
-
-      profilePicUrl = publicURL;
-    }
-
-    const payload = {
-      ...formData,
-      personal_info: { ...formData.personal_info, profilePic: profilePicUrl },
-      user_id: user.id,
-    };
-
-    if (editingId) {
-      const { error } = await supabase
-        .from("resumes")
-        .update(payload)
-        .eq("id", editingId);
-
-      if (error) Swal.fire("Error", error.message, "error");
-      else {
-        Swal.fire("Updated!", "Resume updated successfully", "success");
-        setEditingId(null);
-        resetForm();
-      }
-    } else {
-      const { error } = await supabase.from("resumes").insert([payload]);
-      if (error) Swal.fire("Error", error.message, "error");
-      else Swal.fire("Created!", "Resume created successfully", "success");
-    }
-
-    setFile(null);
-    setShowForm(false);
-    fetchResumes();
+  // Logout
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate("/");
   };
 
-  const resetForm = () => {
+  // Delete your resume
+  const handleDelete = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this resume?")) return;
+    await supabase.from("resumes").delete().eq("id", id);
+    fetchResumes();
     setFormData({
       title: "",
       personal_info: { name: "", email: "", phone: "", profilePic: "" },
@@ -114,143 +75,93 @@ const Dashboard = () => {
     });
   };
 
-  // ---------------- DELETE ----------------
-  const deleteResume = async (id) => {
-    const result = await Swal.fire({
-      title: "Are you sure?",
-      text: "This will delete the resume permanently!",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonText: "Yes, delete it!",
-    });
-
-    if (result.isConfirmed) {
-      const { error } = await supabase.from("resumes").delete().eq("id", id);
-      if (error) Swal.fire("Error", error.message, "error");
-      else {
-        Swal.fire("Deleted!", "Resume deleted successfully", "success");
-        fetchResumes();
-      }
-    }
-  };
-
-  // ---------------- EDIT ----------------
-  const editResume = (res) => {
-    setEditingId(res.id);
-    setFormData({
-      title: res.title || "",
-      personal_info: {
-        name: res.personal_info?.name || "",
-        email: res.personal_info?.email || "",
-        phone: res.personal_info?.phone || "",
-        profilePic: res.personal_info?.profilePic || "",
-      },
-      education: res.education || [],
-      work_experience: res.work_experience || [],
-      skills: res.skills || [],
-      projects: res.projects || [],
-      certifications: res.certifications || [],
-      languages: res.languages || [],
-      profile_summary: res.profile_summary || "",
-    });
-    setShowForm(true);
-  };
-
-  // ---------------- DOWNLOAD PDF ----------------
-  const downloadResume = (res) => {
-    const doc = new jsPDF();
-    doc.setFontSize(18);
-    doc.text(res.title, 10, 10);
-    doc.setFontSize(12);
-    doc.text(res.personal_info.name || "", 10, 20);
-    doc.text(res.personal_info.email || "", 10, 30);
-    doc.text(res.personal_info.phone || "", 10, 40);
-    doc.text(res.profile_summary || "", 10, 50);
-    doc.save(`${res.title}.pdf`);
-  };
-
   return (
-    <div className="min-h-screen p-6 bg-gradient-to-br from-gray-100 to-gray-50">
-      <h1 className="text-4xl font-bold mb-6 text-gray-700 animate-bounce">
-        My Resumes
-      </h1>
+    <div className="dashboard-wrapper">
+      {/* Sidebar */}
+      <div className="sidebar">
+        <h2 className="sidebar-title">Dashboard</h2>
+        <button className={`sidebar-btn ${view === "my" ? "active" : ""}`} onClick={() => setView("my")}>
+          My Resume
+        </button>
+        <button className={`sidebar-btn ${view === "all" ? "active" : ""}`} onClick={() => setView("all")}>
+          All Resumes
+        </button>
+        <button className={`sidebar-btn ${view === "create" ? "active" : ""}`} onClick={() => setView("create")}>
+          Create Resume
+        </button>
+        <button className="sidebar-btn logout" onClick={handleLogout}>
+          Logout
+        </button>
+      </div>
 
-      <button
-        className="mb-4 bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700 transition-transform transform hover:scale-105"
-        onClick={() => setShowForm(!showForm)}
-      >
-        {showForm ? "Close Form" : editingId ? "Edit Resume" : "Add New Resume"}
-      </button>
-
-      <AnimatePresence>
-        {showForm && (
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.3 }}
-          >
-            <DashboardForm
-              formData={formData}
-              setFormData={setFormData}
-              handleSubmit={handleSubmit}
-              file={file}
-              setFile={setFile}
-              editingId={editingId}
-            />
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {loading ? (
-        <p className="text-gray-500 animate-pulse">Loading...</p>
-      ) : resumes.length === 0 ? (
-        <p className="text-gray-500">No resumes found.</p>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
-          {resumes.map((res) => (
-            <motion.div
-              key={res.id}
-              className="bg-white p-4 rounded-xl shadow hover:shadow-xl transition transform hover:scale-105"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-            >
-              <h2 className="font-semibold text-xl">{res.title}</h2>
-              {res.personal_info.profilePic && (
-                <img
-                  src={res.personal_info.profilePic}
-                  alt="Profile"
-                  className="w-16 h-16 rounded-full mt-2 mb-2 object-cover border-2 border-blue-500"
-                />
-              )}
-              <p className="text-sm text-gray-500 mb-2">
-                {res.personal_info.name} - {res.personal_info.email}
-              </p>
-              <p className="text-gray-600 mb-2">{res.profile_summary}</p>
-              <div className="flex gap-2 mt-2">
-                <button
-                  className="bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600 transition"
-                  onClick={() => editResume(res)}
-                >
-                  Edit
-                </button>
-                <button
-                  className="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600 transition"
-                  onClick={() => deleteResume(res.id)}
-                >
-                  Delete
-                </button>
-                <button
-                  className="bg-green-500 text-white px-2 py-1 rounded hover:bg-green-600 transition"
-                  onClick={() => downloadResume(res)}
-                >
-                  Download
-                </button>
+      {/* Main content */}
+      <div className="dashboard-main">
+        {loading ? (
+          <p className="loading-text">Loading...</p>
+        ) : view === "create" ? (
+          <DashboardForm
+            formData={formData}
+            setFormData={setFormData}
+            file={file}
+            setFile={setFile}
+            fetchResumes={fetchResumes}
+            setView={setView}
+          />
+        ) : view === "my" ? (
+          selectedResume ? (
+            <div className="section">
+              <h3 className="section-title">My Resume</h3>
+              <div className="resume-card">
+                {selectedResume.personal_info.profilePic && (
+                  <img
+                    src={selectedResume.personal_info.profilePic}
+                    alt="Profile"
+                    className="profile-pic"
+                  />
+                )}
+                <h2>{selectedResume.title}</h2>
+                <p><strong>Name:</strong> {selectedResume.personal_info.name}</p>
+                <p><strong>Summary:</strong> {selectedResume.profile_summary}</p>
+                <div className="resume-actions">
+                  <button className="edit-btn" onClick={() => {
+                    setFormData(selectedResume);
+                    setView("create");
+                  }}>Edit</button>
+                  <button className="delete-btn" onClick={() => handleDelete(selectedResume.id)}>Delete</button>
+                  <button className="view-btn" onClick={() => navigate(`/resume-detail?id=${selectedResume.id}`)}>View</button>
+                </div>
               </div>
-            </motion.div>
-          ))}
-        </div>
-      )}
+            </div>
+          ) : (
+            <p>You have not created any resume yet.</p>
+          )
+        ) : view === "all" ? (
+          <div className="section">
+            <h3 className="section-title">All Resumes</h3>
+            {resumes.length === 0 ? (
+              <p>No resumes found.</p>
+            ) : (
+              <div className="resumes-grid">
+                {resumes.map((res) => (
+                  <div key={res.id} className="resume-card">
+                    {res.personal_info.profilePic && (
+                      <img
+                        src={res.personal_info.profilePic}
+                        alt="Profile"
+                        className="profile-pic"
+                      />
+                    )}
+                    <h2>{res.title}</h2>
+                    <p><strong>Name:</strong> {res.personal_info.name}</p>
+                    <p><strong>Summary:</strong> {res.profile_summary}</p>
+                    <button className="view-btn" onClick={() => navigate(`/resume-detail?id=${res.id}`)}>View</button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        ) : null}
+      </div>
     </div>
   );
 };

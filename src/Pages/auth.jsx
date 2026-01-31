@@ -3,7 +3,7 @@ import  supabase  from "../config";
 import Swal from "sweetalert2";
 import { useNavigate } from "react-router-dom";
 
-import "../index.css";
+import "../App.css";
 
 const CardBackground = ({ activeView }) => {
   return <div className={`card-bg ${activeView === "login" ? "login" : ""}`} />;
