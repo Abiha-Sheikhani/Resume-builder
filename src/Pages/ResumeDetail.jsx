@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import supabase from "../config";
 import Swal from "sweetalert2";
-import "../index.css"
+import "../ResumeDetail.css"
 
 
 const ResumeDetail = () => {
